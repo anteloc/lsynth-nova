@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lsynth-nova"
+version = "3.1.0"
+description = "LSynth for the command line: synthesize flexible LEGO parts (hoses, cables, bands, chains) in LDraw files"
+readme = "README.md"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+dependencies = ["numpy>=2"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+lsynth = "lsynth_nova.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["lsynth_nova*"]
+
+[tool.setuptools.package-data]
+lsynth_nova = ["data/lsynth.mpd", "data/parts/*.dat"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
