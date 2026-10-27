@@ -71,12 +71,13 @@ RUN pip install /opt/lsynth && LDRAW_DIR=/path/to/ldraw lsynth --install-parts
 
 ### Verification
 
-- `lsynth_nova/` mirrors the C files: `synth.py` ← lsynthcp.c, `hose.py` ← hose.c + curve.c,
+- `lsynth_nova/` mirrors the files of the [original C code](https://github.com/deeice/lsynth/tree/master/lsynth/lsynth)
+  (no longer in this repository): `synth.py` ← lsynthcp.c, `hose.py` ← hose.c + curve.c,
   `band.py` ← band.c, `config.py` ← `parse_descr()`, `mathlib.py` ← mathlib.c. Every function names its C
   original. `C quirk` comments mark C behaviour that was kept on purpose, or fixed where C corrupted output.
 - `tests/golden/` holds the C code's output for every `examples/*-Constraints.*`, from a double-precision
-  build made by `scripts/c_reference.sh`. The port reproduces all 26 examples number for number:
-  `uv run pytest`.
+  build of the original C code (`PRECISION double`, `-ffp-contract=off`). The port reproduces all 26
+  examples number for number: `uv run pytest`.
 - Why double: in float32, the C program drifts on long hoses (one fiber-optic cable grows from 3 to 3500
   segments). The double build, and so the port, stays within a few segments of the MLCad-made
   `examples/*-Synthesis.*` files.
@@ -93,7 +94,7 @@ Can be expanded with user generated synthesis types. Examine the lsynth.mpd file
 
 ## Instructions
 
-Download a package for your OS.  
+The original C LSynth (for MLCad and other editors) is no longer in this repository. Download a package for your OS:  
   * [The LSynth 3.1.1 Windows installer](https://deeice.github.io/lsynth/LSynth_3_1_1_setup.exe)  
   * [Some old Mac OS X packages](http://anoved.net/2009/11/lsynth-3-1-for-mac-os-x/)  
       It's built into Bricksmith  

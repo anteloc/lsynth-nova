@@ -1,6 +1,6 @@
 """The port must reproduce the C LSynth for every example.
 
-tests/golden/ holds the output of the C code built with PRECISION=double (scripts/c_reference.sh); the
+tests/golden/ holds the output of the C code built with PRECISION=double (upstream LSynth); the
 Python port computes in float64 with the same operation order, so every number must agree.
 """
 from pathlib import Path
