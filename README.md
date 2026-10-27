@@ -20,6 +20,15 @@ Synthesized models reference LSynth's own parts (`LS01.dat`, `LS23.dat`, …), w
 library. LeoCAD reads `<library>/unofficial/parts`. Use `--install-parts DIR` to put them somewhere else.
 Existing files are never overwritten.
 
+Prebuilt wheels are attached to each [GitHub release](https://github.com/anteloc/lsynth-nova/releases):
+`pip install lsynth_nova-<version>-py3-none-any.whl`.
+
+### Releasing
+
+Push a `v*` tag on `master` (e.g. `git tag v0.5.0 && git push origin v0.5.0`), or create the release with a new
+tag from GitHub's "Draft a new release" page. `.github/workflows/release.yml` then runs the tests, builds the
+wheel and sdist with the tag's version, and attaches them to the release.
+
 ### Use
 
 ```sh

@@ -1,0 +1,71 @@
+# Publishes a GitHub release with the wheel and sdist whenever a "v*" tag on master is pushed
+# (git push origin v1.2.3), or created from the GitHub UI's "Draft a new release" page.
+# The package version is taken from the tag (v1.2.3 -> 1.2.3), overriding pyproject.toml.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check the tag is on master
+        run: |
+          git fetch origin master
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/master; then
+            echo "::error::Tag $GITHUB_REF_NAME ($GITHUB_SHA) is not on master; not releasing."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set the package version from the tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i -E "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+          grep -q "^version = \"$VERSION\"$" pyproject.toml
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Test
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[test]"
+          pytest -q
+
+      - name: Build wheel and sdist
+        run: |
+          pip install build
+          rm -rf dist
+          python -m build
+          ls -l dist
+
+      - name: Check the wheel installs and runs
+        run: |
+          python -m venv /tmp/wheel-check
+          /tmp/wheel-check/bin/pip install dist/*.whl
+          /tmp/wheel-check/bin/lsynth --version
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # Release already exists (e.g. created from the GitHub UI): just attach the files.
+            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* \
+              --title "$GITHUB_REF_NAME" \
+              --generate-notes \
+              --verify-tag
+          fi
