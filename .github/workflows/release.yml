@@ -1,11 +1,18 @@
 # Publishes a GitHub release with the wheel and sdist whenever a "v*" tag on master is pushed
 # (git push origin v1.2.3), or created from the GitHub UI's "Draft a new release" page.
+# It can also be started from the Actions tab ("Run workflow" on master, with a tag such as v1.2.3):
+# the tag is then created on master's head commit together with the release.
 # The package version is taken from the tag (v1.2.3 -> 1.2.3), overriding pyproject.toml.
 name: Release
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to create on master and release, e.g. v1.2.3"
+        required: true
 
 permissions:
   contents: write
@@ -13,16 +20,26 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check the tag is on master
+      - name: Check the tag name and that the commit is on master
         run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+(\.[0-9]+)*([.-]?[A-Za-z0-9.]+)?$ ]]; then
+            echo "::error::'$TAG' is not a version tag like v1.2.3."
+            exit 1
+          fi
           git fetch origin master
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/master; then
-            echo "::error::Tag $GITHUB_REF_NAME ($GITHUB_SHA) is not on master; not releasing."
+            echo "::error::$TAG ($GITHUB_SHA) is not on master; not releasing."
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "::error::Tag $TAG already exists; push it again or delete it instead."
             exit 1
           fi
 
@@ -32,7 +49,7 @@ jobs:
 
       - name: Set the package version from the tag
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${TAG#v}"
           sed -i -E "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
           grep -q "^version = \"$VERSION\"$" pyproject.toml
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
@@ -60,12 +77,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+          if gh release view "$TAG" >/dev/null 2>&1; then
             # Release already exists (e.g. created from the GitHub UI): just attach the files.
-            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+            gh release upload "$TAG" dist/* --clobber
           else
-            gh release create "$GITHUB_REF_NAME" dist/* \
-              --title "$GITHUB_REF_NAME" \
+            # On workflow_dispatch the tag does not exist yet and is created at the built commit.
+            gh release create "$TAG" dist/* \
+              --title "$TAG" \
               --generate-notes \
-              --verify-tag
+              --target "$GITHUB_SHA"
           fi

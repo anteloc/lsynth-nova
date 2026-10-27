@@ -26,7 +26,8 @@ Prebuilt wheels are attached to each [GitHub release](https://github.com/anteloc
 ### Releasing
 
 Push a `v*` tag on `master` (e.g. `git tag v0.5.0 && git push origin v0.5.0`), or create the release with a new
-tag from GitHub's "Draft a new release" page. `.github/workflows/release.yml` then runs the tests, builds the
+tag from GitHub's "Draft a new release" page, or run the "Release" workflow on `master` from the Actions tab
+with the tag to create. `.github/workflows/release.yml` then runs the tests, builds the
 wheel and sdist with the tag's version, and attaches them to the release.
 
 ### Use
